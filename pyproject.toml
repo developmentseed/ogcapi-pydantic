@@ -1,0 +1,104 @@
+[project]
+name = "ogcapi-pydantic"
+description = "Pydantic models for OGC API specifications."
+readme = "README.md"
+requires-python = ">=3.8"
+license = {file = "LICENSE"}
+authors = [
+    {name = "Vincent Sarago", email = "vincent@developmentseed.org"},
+]
+keywords = ["OGCAPI", "pydantic", "OGC API Features", "OGC API Tiles", "OGC API Common"]
+classifiers = [
+    "Intended Audience :: Information Technology",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: BSD License",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Scientific/Engineering :: GIS",
+]
+dynamic = ["version"]
+dependencies = [
+    "pydantic>=2.4,<3.0",
+    "geojson-pydantic>=1.0,<2.0",
+    "typing_extensions; python_version < '3.9'",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest",
+    "pytest-cov",
+    "pytest-benchmark",
+]
+dev = [
+    "pre-commit",
+]
+docs = [
+    "mkdocs",
+    "mkdocs-material",
+    "pygments",
+    "pdocs",
+]
+
+[project.urls]
+Homepage = "https://developmentseed.org/ogcapi-pydantic"
+Source = "https://github.com/developmentseed/ogcapi-pydantic"
+Documentation = "https://developmentseed.org/ogcapi-pydantic/"
+
+[tool.hatch.version]
+path = "ogcapi_pydantic/__init__.py"
+
+[tool.hatch.build.targets.sdist]
+exclude = [
+  "/tests",
+  "/docs",
+  "CONTRIBUTING.md",
+  "CHANGES.md",
+  ".pytest_cache",
+  ".github",
+  ".bumpversion.cfg",
+  ".env.example",
+  ".flake8",
+  ".gitignore",
+  ".pre-commit-config.yaml",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.coverage.run]
+branch = true
+parallel = true
+
+[tool.coverage.report]
+exclude_lines = [
+  "no cov",
+  "if __name__ == .__main__.:",
+  "if TYPE_CHECKING:",
+]
+
+[tool.isort]
+profile = "black"
+known_first_party = ["ogcapi_pydantic"]
+known_third_party = ["geojson_pydantic", "pydantic"]
+default_section = "THIRDPARTY"
+
+[tool.mypy]
+no_strict_optional = "True"
+
+[tool.ruff]
+select = [
+    "D1",  # pydocstyle errors
+    "E",  # pycodestyle errors
+    "W",  # pycodestyle warnings
+    "F",  # flake8
+    "C",  # flake8-comprehensions
+    "B",  # flake8-bugbear
+]
+ignore = [
+    "E501",  # line too long, handled by black
+    "B008",  # do not perform function calls in argument defaults
+    "B905",  # ignore zip() without an explicit strict= parameter, only support with python >3.10
+]
