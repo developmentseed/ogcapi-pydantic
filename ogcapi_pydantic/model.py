@@ -9,6 +9,10 @@ from typing_extensions import Annotated
 
 from ogcapi_pydantic.enums import MediaType
 
+axesInfo = Annotated[List[str], Field(min_length=2, max_length=2)]
+NumType = Union[float, int]
+BoundsType = Tuple[NumType, NumType]
+
 
 class Link(BaseModel):
     """Link model.
@@ -84,15 +88,12 @@ class CRSUri(BaseModel):
 
 
 class CRSWKT(BaseModel):
-    """Coordinate Reference System (CRS) from WKT."""
+    """Coordinate Reference System (CRS) from WKT encoded as PROJJSON Object."""
 
     wkt: Annotated[
-        str,
+        Dict,
         Field(
-            description="Reference to one coordinate reference system (CRS) as WKT string",
-            examples=[
-                'GEOGCS["GCS_WGS_1984",DATUM["D_WGS_1984",SPHEROID["WGS_1984",6378137,298.257223563]],PRIMEM["Greenwich",0],UNIT["Degree",0.017453292519943295]]',
-            ],
+            description="An object defining the CRS using the JSON encoding for Well-known text representation of coordinate reference systems 2.0",
         ),
     ]
 
@@ -100,10 +101,12 @@ class CRSWKT(BaseModel):
 class CRSRef(BaseModel):
     """CRS from referenceSystem."""
 
-    referenceSystem: Dict[str, Any] = Field(
-        ...,
-        description="A reference system data structure as defined in the MD_ReferenceSystem of the ISO 19115",
-    )
+    referenceSystem: Annotated[
+        Dict[str, Any],
+        Field(
+            description="A reference system data structure as defined in the MD_ReferenceSystem of the ISO 19115",
+        ),
+    ]
 
 
 class CRS(RootModel[Union[str, Union[CRSUri, CRSWKT, CRSRef]]]):
@@ -323,36 +326,6 @@ class TimeStamp(RootModel):
     ]
 
 
-class BoundingBox(BaseModel):
-    """BoundingBox model.
-
-    Ref: https://github.com/opengeospatial/ogcapi-tiles/blob/master/openapi/schemas/tms/2DBoundingBox.yaml
-
-    Code generated using https://github.com/koxudaxi/datamodel-code-generator/
-    """
-
-    lowerLeft: Annotated[
-        List[float],
-        Field(
-            max_length=2,
-            min_length=2,
-            description="A 2D Point in the CRS indicated elsewhere",
-        ),
-    ]
-    upperRight: Annotated[
-        List[float],
-        Field(
-            max_length=2,
-            min_length=2,
-            description="A 2D Point in the CRS indicated elsewhere",
-        ),
-    ]
-    crs: Annotated[Optional[CRS], Field(name="CRS")] = None
-    orderedAxes: Annotated[
-        Optional[List[str]], Field(max_length=2, min_length=2)
-    ] = None
-
-
 # Ref: https://github.com/opengeospatial/ogcapi-tiles/blob/master/openapi/schemas/tms/propertiesSchema.yaml
 Type = Literal["array", "boolean", "integer", "null", "number", "object", "string"]
 
@@ -467,6 +440,39 @@ class Style(BaseModel):
     ] = None
 
 
+class BoundingBox(BaseModel, arbitrary_types_allowed=True):
+    """Bounding box
+
+    ref: https://github.com/opengeospatial/2D-Tile-Matrix-Set/blob/master/schemas/tms/2.0/json/2DBoundingBox.json
+
+    """
+
+    lowerLeft: Annotated[
+        List[NumType],
+        Field(
+            max_length=2,
+            min_length=2,
+            description="A 2D Point in the CRS indicated elsewhere",
+        ),
+    ]
+    upperRight: Annotated[
+        List[NumType],
+        Field(
+            max_length=2,
+            min_length=2,
+            description="A 2D Point in the CRS indicated elsewhere",
+        ),
+    ]
+    crs: Annotated[
+        Optional[CRS],
+        Field(description="Coordinate Reference System (CRS)"),
+    ] = None
+    orderedAxes: Annotated[
+        Optional[axesInfo],
+        Field(description="Ordered list of names of the dimensions defined in the CRS"),
+    ] = None
+
+
 class GeospatialData(BaseModel):
     """Geospatial model.
 
@@ -539,7 +545,9 @@ class GeospatialData(BaseModel):
     theme: Annotated[
         Optional[str], Field(description="Category where the layer can be grouped")
     ] = None
-    crs: Annotated[Optional[CRS], Field(name="CRS")] = None
+    crs: Annotated[
+        Optional[CRS], Field(description="Coordinate Reference System (CRS)")
+    ] = None
     epoch: Annotated[
         Optional[float],
         Field(description="Epoch of the Coordinate Reference System (CRS)"),
@@ -599,7 +607,9 @@ class TilePoint(BaseModel):
     """
 
     coordinates: Annotated[List[float], Field(max_length=2, min_length=2)]
-    crs: Annotated[Optional[CRS], Field(name="CRS")]
+    crs: Annotated[
+        Optional[CRS], Field(description="Coordinate Reference System (CRS)")
+    ]
     tileMatrix: Annotated[
         Optional[str],
         Field(description="TileMatrix identifier associated with the scaleDenominator"),
@@ -644,7 +654,7 @@ class TileSet(BaseModel):
         Literal["map", "vector", "coverage"],
         Field(description="Type of data represented in the tileset"),
     ]
-    crs: Annotated[CRS, Field(name="CRS")]
+    crs: Annotated[CRS, Field(description="Coordinate Reference System (CRS)")]
     tileMatrixSetURI: Annotated[
         Optional[AnyUrl],
         Field(
@@ -715,36 +725,6 @@ class TileSetList(BaseModel):
     """
 
     tilesets: List[TileSet]
-
-
-axesInfo = Annotated[List[str], Field(min_length=2, max_length=2)]
-NumType = Union[float, int]
-BoundsType = Tuple[NumType, NumType]
-
-
-class TMSBoundingBox(BaseModel, arbitrary_types_allowed=True):
-    """Bounding box
-
-    ref: https://github.com/opengeospatial/2D-Tile-Matrix-Set/blob/master/schemas/tms/2.0/json/2DBoundingBox.json
-
-    """
-
-    lowerLeft: Annotated[
-        BoundsType,
-        Field(description="A 2D Point in the CRS indicated elsewhere"),
-    ]
-    upperRight: Annotated[
-        BoundsType,
-        Field(description="A 2D Point in the CRS indicated elsewhere"),
-    ]
-    crs: Annotated[
-        Optional[CRS],
-        Field(description="Coordinate Reference System (CRS)"),
-    ] = None
-    orderedAxes: Annotated[
-        Optional[axesInfo],
-        Field(description="Ordered list of names of the dimensions defined in the CRS"),
-    ] = None
 
 
 class variableMatrixWidth(BaseModel):
@@ -825,13 +805,13 @@ class TileMatrix(BaseModel, extra="forbid"):
         Field(
             description="The corner of the tile matrix (_topLeft_ or _bottomLeft_) used as the origin for numbering tile rows and columns. This corner is also a corner of the (0, 0) tile.",
         ),
-    ] = None
+    ] = "topLeft"
     pointOfOrigin: Annotated[
         BoundsType,
         Field(
             description="Precise position in CRS coordinates of the corner of origin (e.g. the top-left corner) for this tile matrix. This position is also a corner of the (0, 0) tile. In previous version, this was 'topLeftCorner' and 'cornerOfOrigin' did not exist.",
         ),
-    ] = None
+    ]
     tileWidth: Annotated[
         int,
         Field(
@@ -921,7 +901,7 @@ class TileMatrixSet(BaseModel, arbitrary_types_allowed=True):
         Field(description="Reference to a well-known scale set"),
     ] = None
     boundingBox: Annotated[
-        Optional[TMSBoundingBox],
+        Optional[BoundingBox],
         Field(
             description="Minimum bounding rectangle surrounding the tile matrix set, in the supported CRS",
         ),
